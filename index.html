@@ -2,6 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
+<meta name="app-version" content="2.1-REC-TEST">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>WMS Cold Storage · Master Cap</title>
 <link rel="icon" id="fav" href="Logo%20sungroup.jpg">
@@ -190,6 +191,11 @@ tbody tr:hover td,#v-stock tbody tr:hover td{background:var(--ac2)}
 #sKpi .card.kpi-ok{background:var(--ok2);border-color:transparent}#sKpi .card.kpi-ok .text-xl,#sKpi .card.kpi-ok .sub{color:var(--ok)}
 #sTit{font-size:1.05rem;font-weight:600}
 @media print{.hd,#kpi,#jump,.sbar,#toast,.no-print{display:none!important}body{background:#fff}.card{box-shadow:none}}
+
+/* ===== แจ้งเตือนเวอร์ชันใหม่ ===== */
+#updBar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:60;display:flex;flex-wrap:wrap;align-items:center;gap:10px;max-width:calc(100vw - 24px);padding:10px 14px;background:var(--sf);border:1px solid var(--ac);border-radius:12px;box-shadow:0 10px 30px -8px rgba(11,37,54,.35)}
+#updBar b{color:var(--ac)}
+@media print{#updBar{display:none!important}}
 </style>
 </head>
 <body>
@@ -197,9 +203,12 @@ tbody tr:hover td,#v-stock tbody tr:hover td{background:var(--ac2)}
 <!-- ===== ส่วนหัว + แท็บ ===== -->
 <header class="hd">
   <div class="max-w-[1400px] mx-auto px-4 py-2 flex flex-wrap items-center gap-2">
-    <div style="display:flex;align-items:center;gap:12px;flex:1 1 220px;min-width:200px"><div id="logoBox" title="โลโก้บริษัท · คลิกเพื่ออัปโหลดรูปใหม่ · Shift+คลิกเพื่อกลับไปใช้ไฟล์เดิม" style="height:42px;min-width:42px;padding:3px;background:#fff;border:1px solid var(--bd);border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;flex:0 0 auto"><img id="logoImg" class="hide" alt="โลโก้บริษัท" style="height:100%;width:auto;max-width:150px;object-fit:contain;display:block"><span id="logoMk" style="font-weight:700;color:#0e7c66;font-size:13px;padding:0 6px">LOGO</span></div><input type="file" id="logoFile" accept="image/*" class="hide"><div><div class="font-semibold text-base">WMS Cold Storage</div><div class="sub">ตัดยอด · จัดชุดพาเลทให้พอดี Master Cap</div></div></div>
+    <div style="display:flex;align-items:center;gap:12px;flex:1 1 220px;min-width:200px"><div id="logoBox" title="โลโก้บริษัท · คลิกเพื่ออัปโหลดรูปใหม่ · Shift+คลิกเพื่อกลับไปใช้ไฟล์เดิม" style="height:42px;min-width:42px;padding:3px;background:#fff;border:1px solid var(--bd);border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;flex:0 0 auto"><img id="logoImg" class="hide" alt="โลโก้บริษัท" style="height:100%;width:auto;max-width:150px;object-fit:contain;display:block"><span id="logoMk" style="font-weight:700;color:#0e7c66;font-size:13px;padding:0 6px">LOGO</span></div><input type="file" id="logoFile" accept="image/*" class="hide"><div><div class="font-semibold text-base">WMS Cold Storage</div><div class="sub">ตัดยอด · จัดชุดพาเลทให้พอดี Master Cap · เวอร์ชัน <span id="verTx"></span></div></div></div>
     <button class="btn p" id="bImp">นำเข้า Excel / CSV</button>
     <button class="btn" id="bExp">Export ที่กรองแล้ว</button>
+    <button class="btn" id="bBak" title="ดาวน์โหลดไฟล์สำรองข้อมูลทั้งระบบ (.json)">💾 สำรอง</button>
+    <button class="btn" id="bRes" title="กู้คืนข้อมูลจากไฟล์สำรอง (.json)">📂 กู้คืน</button>
+    <input type="file" id="fRes" accept=".json,application/json" class="hide">
     <button class="btn d" id="bClr">ล้างข้อมูล</button>
     <button class="btn" id="bManual" data-manual="1" title="เปิดคู่มือการใช้งานระบบรวมเลท-ตัดเลท (PDF)">📖 คู่มือ</button>
     <a href="https://forms.gle/7TehEGxbBTK1XoYa8" target="_blank" rel="noopener noreferrer" class="btn" id="bReport" title="แจ้งหรือรายงานข้อผิดพลาด">⚠️ แจ้งปัญหา</a>
@@ -352,7 +361,8 @@ function modal(title, body, btns) {                                         // M
 let topWh = '', sDay = '', rows = [], master = {}, logs = [], merges = [], cuts = [], fixes = [], tab = 'stock', limit = 200, sortK = 'lpn', sortD = 1, pm = {}, pa = {};
 const flt = { q: '', item: '', desc: '', lot: '', loc: '', lpn: '', wh: '', locz: '', locx: '', lpnt: '', lpnx: '', alloc: '', st: '', fs: '', ls: '' };
 const idb = () => new Promise((ok, no) => { const r = indexedDB.open('wms_single', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); });
-let svT; const save = () => { clearTimeout(svT); svT = setTimeout(async () => { try { const d = await idb(); d.transaction('kv', 'readwrite').objectStore('kv').put({ rows, master, logs, merges, cuts, fixes }, 'wms'); } catch (e) {} }, 400); };
+let svT, svWarn = 0; const save = () => { clearTimeout(svT); svT = setTimeout(async () => { try { const d = await idb(); await new Promise((ok, no) => { const tx = d.transaction('kv', 'readwrite'); tx.objectStore('kv').put({ rows, master, logs, merges, cuts, fixes }, 'wms'); tx.oncomplete = ok; tx.onerror = tx.onabort = () => no(tx.error); }); }
+  catch (e) { if (Date.now() - svWarn > 30000) { svWarn = Date.now(); toast('⚠️ บันทึกข้อมูลในเครื่องไม่สำเร็จ — กด "💾 สำรอง" เก็บไฟล์ไว้ก่อน'); } } }, 400); };
 async function load() {
   try { const d = await idb(); const s = await new Promise(ok => { const q = d.transaction('kv').objectStore('kv').get('wms'); q.onsuccess = () => ok(q.result); q.onerror = () => ok(null); });
     if (s) { rows = s.rows || []; master = s.master || {}; logs = s.logs || []; merges = s.merges || []; cuts = s.cuts || []; fixes = s.fixes || []; } } catch (e) {}
@@ -376,18 +386,18 @@ function parse(aoa) {
   const hn = aoa[h].map(N), col = {};
   for (const k in AL) for (const a of AL[k]) { const x = hn.indexOf(a); if (x >= 0) { col[k] = x; break; } }   // เรียงตามลำดับความสำคัญของชื่อคอลัมน์
   const g = (r, k) => col[k] === undefined ? '' : String(r[col[k]] == null ? '' : r[col[k]]).trim();
-  const out = [], names = {};
+  const out = [], names = {}, skipped = [], noWh = [], badQty = [];
   aoa.forEach((r, i) => {
     const t = String(r[0]).trim().match(/^(\d{5,})\s+(.+)$/);            // แถวหัวข้อ "รหัส ชื่อสินค้าเต็ม"
     if (t) { names[t[1]] = t[2]; return; }
     if (i <= h) return;
-    const item = g(r, 'item'), lpn = g(r, 'lpn'); if (!item || !lpn) return;   // ข้ามแถวว่าง / แถวผลรวม
-    const q = parseFloat(g(r, 'qty').replace(/,/g, ''));
+    const item = g(r, 'item'), lpn = g(r, 'lpn'); if (!item || !lpn) { if (item || lpn) skipped.push({ i: i + 1, item, lpn, loc: g(r, 'loc'), qty: g(r, 'qty') }); return; }   // ข้ามแถวว่าง / แถวผลรวม
+    const q = parseFloat(g(r, 'qty').replace(/,/g, '')); if (col.wh !== undefined && !g(r, 'wh')) noWh.push({ i: i + 1, item, lpn }); if (!(q > 0)) badQty.push({ i: i + 1, item, lpn, qty: g(r, 'qty') });
     out.push({ id: uid(), item, desc: g(r, 'desc'), lot: g(r, 'lot') || '-', lot2: g(r, 'lot2'), loc: g(r, 'loc'), lpn,
       qty: r2(isNaN(q) ? 0 : q), wh: (g(r, 'wh') || 'CS2').toUpperCase(), st: col.st === undefined ? '' : (g(r, 'st').toUpperCase() || 'N/A'), ls: col.ls === undefined ? '' : (g(r, 'ls').toUpperCase() || 'N/A'),
       alloc: Math.max(0, r2(parseFloat(g(r, 'alloc').replace(/,/g, '')) || 0)), pack: packCap(g(r, 'pack')), cap: parseFloat(g(r, 'cap')) || 0 });
   });
-  return { out, names, hasAlloc: col.alloc !== undefined, hasSt: col.st !== undefined || col.ls !== undefined };
+  return { out, names, skipped, noWh, badQty, hasAlloc: col.alloc !== undefined, hasSt: col.st !== undefined || col.ls !== undefined };
 }
 async function readFile(f) {
   const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
@@ -402,7 +412,7 @@ function applyImport(p, replace) {
   p.out.forEach(r => { const m = master[r.item] || (master[r.item] = {}); if (r.pack) m.pack = r.pack; if (r.cap > 0 && m.capSrc !== 'base' && m.capSrc !== 'manual') { m.cap = r.cap; m.capSrc = 'stock'; } if (r.desc && !m.name) m.name = r.desc; });
   for (const k in p.names) (master[k] || (master[k] = {})).name = p.names[k];
   log('นำเข้า', { item: '', lpn: '', lot: '', qty: r2(p.out.reduce((a, r) => a + r.qty, 0)), wh: '' }, p.out.length + ' แถว');
-  refresh(); toast('นำเข้า ' + p.out.length.toLocaleString() + ' แถว' + (p.hasAlloc ? '' : ' · ไฟล์ไม่มีคอลัมน์ Allocated (ถือเป็น 0)') + (p.hasSt ? '' : ' · ไฟล์ไม่มีคอลัมน์ Status (ไม่ใช้เป็นเงื่อนไข)'));
+  refresh(); toast('นำเข้า ' + p.out.length.toLocaleString() + ' แถว' + (p.hasAlloc ? '' : ' · ไฟล์ไม่มีคอลัมน์ Allocated (ถือเป็น 0)') + (p.hasSt ? '' : ' · ไฟล์ไม่มีคอลัมน์ Status (ไม่ใช้เป็นเงื่อนไข)')); try { showImportReport(p); } catch (e) { console.error(e); }
 }
 
 /* ===================== ตารางสต็อก ===================== */
@@ -1515,6 +1525,31 @@ $('#sPrev').onclick = () => { const [y, m, d] = sumCalc() && sDay.split('-').map
 $('#sNext').onclick = () => { const [y, m, d] = sumCalc() && sDay.split('-').map(Number); sDay = ymd(new Date(y, m - 1, d + 1)); renderSum(); };
 $('#sToday').onclick = () => { sDay = ymd(new Date()); renderSum(); };
 $('#sWh').onchange = renderSum; $('#sPrint').onclick = () => window.print(); $('#sXls').onclick = sumExport;
+
+/* ===================== แจ้งเตือนเวอร์ชันใหม่ (ใช้เมื่อเปิดผ่าน URL เช่น GitHub Pages) ===================== */
+const APP_VER = ($('meta[name="app-version"]') || {}).content || '';
+$('#verTx').textContent = APP_VER ? 'v' + APP_VER : '';
+async function checkVer() {
+  if (!/^https?:$/.test(location.protocol) || !APP_VER) return;               // เปิดจากไฟล์ในเครื่อง (file://) ไม่ตรวจ
+  try {
+    const r = await fetch(location.pathname + location.search, { cache: 'no-store' }), rd = r.body.getReader(), dec = new TextDecoder();
+    let t = ''; while (t.length < 4096) { const { done, value } = await rd.read(); if (done) break; t += dec.decode(value, { stream: true }); }
+    rd.cancel();                                                                // อ่านแค่ส่วนหัวไฟล์ ไม่ดึงทั้งไฟล์
+    const m = t.match(/<meta name="app-version" content="([^"]*)"/);
+    if (m && m[1] && m[1] !== APP_VER) showUpd(m[1]);
+  } catch (e) { /* ออฟไลน์/เข้าไม่ได้ → ข้ามเงียบ ๆ */ }
+}
+function showUpd(v) {
+  try { if (sessionStorage.getItem('updSkip') === v) return; } catch (e) {}
+  if ($('#updBar')) return;
+  const d = document.createElement('div'); d.id = 'updBar'; d.setAttribute('role', 'status');
+  d.innerHTML = '<span>มีเวอร์ชันใหม่ <b>v' + esc(v) + '</b> (ตอนนี้ v' + esc(APP_VER) + ') · ข้อมูลในเครื่องของคุณไม่หาย</span><button class="btn s p" id="updGo">โหลดเวอร์ชันใหม่</button><button class="btn s" id="updLater">ไว้ทีหลัง</button>';
+  document.body.appendChild(d);
+  $('#updGo').onclick = () => location.reload();
+  $('#updLater').onclick = () => { try { sessionStorage.setItem('updSkip', v); } catch (e) {} d.remove(); };
+}
+setTimeout(checkVer, 3000); setInterval(checkVer, 30 * 60 * 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkVer(); });
 function setTab(t) { tab = t; $$('.tab').forEach(b => b.classList.toggle('on', b.dataset.t === t)); ['stock', 'opt', 'mrg', 'fix', 'cap', 'log', 'sum'].forEach(x => $('#v-' + x).classList.toggle('hide', x !== t)); render(); }
 $('#tabs').onclick = e => { const b = e.target.closest('.tab'); if (b) setTab(b.dataset.t); };
 document.addEventListener('keydown', e => { if (e.key === '/' && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) { e.preventDefault(); setTab('stock'); $('#q').focus(); } });
@@ -1523,7 +1558,52 @@ document.addEventListener('keydown', e => { if (e.key === '/' && !/INPUT|SELECT|
 const TH = ['', 'light', 'dark'];
 function setTheme(i) { const t = TH[i]; t ? document.documentElement.dataset.theme = t : delete document.documentElement.dataset.theme; $('#bTheme').textContent = ['ธีม: ตามระบบ', 'ธีม: สว่าง', 'ธีม: มืด'][i]; try { localStorage.setItem('wms_th', i); } catch (e) {} }
 let ti = 0; try { ti = +localStorage.getItem('wms_th') || 0; } catch (e) {}
-setTheme(ti); $('#bTheme').onclick = () => setTheme(ti = (ti + 1) % 3);
+setTheme(ti); 
+/* ===== REC-#TEST: สำรอง / กู้คืน / รายงานตรวจข้อมูลหลังนำเข้า / ขอพื้นที่เก็บถาวร ===== */
+try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
+const stamp = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()); };
+$('#bBak').onclick = () => {
+  if (!rows.length && !Object.keys(master).length && !logs.length) return toast('ยังไม่มีข้อมูลให้สำรอง');
+  try {
+    const blob = new Blob([JSON.stringify({ app: 'wms-cold-storage', ver: APP_VER, at: new Date().toISOString(), rows, master, logs, merges, cuts, fixes })], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'WMS-backup-' + stamp() + '.json';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast('สำรองแล้ว · สต็อก ' + rows.length.toLocaleString() + ' แถว');
+  } catch (e) { toast('สำรองข้อมูลไม่สำเร็จ'); }
+};
+$('#bRes').onclick = () => $('#fRes').click();
+$('#fRes').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  let j; try { j = JSON.parse(await f.text()); } catch (err) { return toast('อ่านไฟล์สำรองไม่ได้ (ไม่ใช่ไฟล์ JSON)'); }
+  if (!j || j.app !== 'wms-cold-storage' || !Array.isArray(j.rows) || !j.rows.slice(0, 50).every(r => r && typeof r === 'object' && 'item' in r && 'lpn' in r)) return toast('ไม่ใช่ไฟล์สำรองของระบบนี้');
+  const arr = x => Array.isArray(x) ? x : [], at = j.at ? new Date(j.at).toLocaleString('th-TH') : '-';
+  modal('กู้คืนข้อมูลจากไฟล์สำรอง', '<div>สำรองเมื่อ <b>' + esc(at) + '</b> (v' + esc(j.ver || '?') + ')<br>สต็อก <b>' + j.rows.length.toLocaleString() + '</b> แถว · ประวัติ ' + arr(j.logs).length.toLocaleString() + ' · Master Cap ' + Object.keys(j.master || {}).length.toLocaleString() + ' Item' +
+    '<div class="sub mt-2">ข้อมูลปัจจุบันในเครื่อง (สต็อก ' + rows.length.toLocaleString() + ' แถว) จะถูกแทนที่ทั้งหมด · แนะนำให้กด “💾 สำรอง” เก็บข้อมูลปัจจุบันไว้ก่อน</div></div>',
+    [['ยกเลิก'], ['กู้คืน', 'p', () => {
+      rows = j.rows; master = j.master && typeof j.master === 'object' ? j.master : {}; logs = arr(j.logs); merges = arr(j.merges); cuts = arr(j.cuts); fixes = arr(j.fixes);
+      mLast = null; mSel.clear(); mDest = ''; pm = {}; limit = 200; refresh(); toast('กู้คืนแล้ว ' + rows.length.toLocaleString() + ' แถว');
+    }]]);
+};
+function importIssues(p) {
+  const L = [], row = (t, item, desc, lpn, wh, d) => L.push([t, item || '', desc || '', lpn || '', wh || '', d || '']);
+  (p.skipped || []).forEach(r => row('ไม่มี LPN หรือ Item (ถูกข้าม)', r.item, '', r.lpn, '', 'ลำดับ ' + r.i + ' · Location ' + r.loc + ' · จำนวน ' + r.qty));
+  (p.noWh || []).forEach(r => row('WH ว่าง (ระบบใช้ CS2 แทน)', r.item, '', r.lpn, 'CS2', 'ลำดับ ' + r.i));
+  p.out.forEach(r => { if (!/^[A-Z]{2,3}\d?$/.test(r.wh)) row('WH ผิดรูปแบบ', r.item, r.desc, r.lpn, r.wh, 'Location ' + r.loc); });
+  (p.badQty || []).forEach(r => row('จำนวนว่าง/เป็น 0 (นับเป็น 0)', r.item, '', r.lpn, '', 'ค่าในไฟล์ “' + r.qty + '”'));
+  const items = [...new Set(p.out.map(r => r.item))];
+  items.forEach(it => { const m = master[it]; if (!(m && (m.cap > 0 || (m.caps && Object.keys(m.caps).length) || m.pack > 0))) row('ไม่มี Master Cap (ใช้ค่าเริ่มต้น)', it, m && m.name, '', '', 'ใช้ค่าเริ่มต้นตามคลัง'); });
+  items.forEach(it => { const m = master[it]; if (m && m.cap === 1) row('Master Cap = 1 (ตรวจสอบ)', it, m.name, '', '', 'น่าจะเป็น Bigbox 1 กล่อง/พาเลท'); });
+  return L;
+}
+function showImportReport(p) {
+  const L = importIssues(p); if (!L.length) return;
+  const sum = {}; L.forEach(x => sum[x[0]] = (sum[x[0]] || 0) + 1);
+  modal('ตรวจข้อมูลหลังนำเข้า', '<div>พบรายการที่ควรตรวจสอบ <b>' + L.length.toLocaleString() + '</b> จุด</div>' +
+    Object.keys(sum).map(k => '<div class="mt-2"><span class="chip wn">' + esc(k) + '</span> <b>' + sum[k].toLocaleString() + '</b><div class="sub">' + esc(L.filter(x => x[0] === k).slice(0, 4).map(x => x[1] || x[3]).join(', ')) + (sum[k] > 4 ? ' …' : '') + '</div></div>').join('') +
+    '<div class="sub mt-2">ยังไม่ได้นำเข้า Master Cap? นำเข้าก่อน แล้วนำเข้าสต็อกใหม่ รายงานจะแม่นขึ้น · ดาวน์โหลดรายงานเต็มเป็น Excel ได้</div>',
+    [['ปิด'], ['ดาวน์โหลดรายงาน (Excel)', 'p', () => dl([['ประเภท', 'Item', 'ชื่อสินค้า', 'LPN', 'WH', 'รายละเอียด']].concat(L), 'รายงานตรวจข้อมูล-' + stamp() + '.xlsx', 'ตรวจข้อมูล')]]);
+}
+$('#bTheme').onclick = () => setTheme(ti = (ti + 1) % 3);
 
 /* แถบตัวกรองของแท็บจัดชุด / รวมเลท */
 $('#oBar').innerHTML = barHtml('o'); $('#mBar').innerHTML = barHtml('m');
