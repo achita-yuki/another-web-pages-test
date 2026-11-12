@@ -6,7 +6,7 @@
 <title>WMS Cold Storage · Master Cap</title>
 <link rel="icon" id="fav" href="Logo%20sungroup.jpg">
 <link rel="apple-touch-icon" href="Logo%20sungroup.jpg">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 /* ===== Base reset (แทน Tailwind preflight) ===== */
@@ -125,8 +125,8 @@ body.on-stock #jump{bottom:calc(68px + env(safe-area-inset-bottom,0px))}
 :root{--bg:#ecf2f6;--sf:#fff;--s2:#f3f7fa;--bd:#dae4eb;--tx:#0f2233;--mu:#5a7084;--ac:#0a6c8f;--ac2:#e0f0f6;--hb:#0b2536;--sh:0 1px 2px rgba(11,37,54,.06),0 6px 16px -8px rgba(11,37,54,.12)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#07121a;--sf:#0e1c27;--s2:#132432;--bd:#213546;--tx:#e6eef4;--mu:#88a0b3;--ac:#4fc3e8;--ac2:#0f2e3d;--hb:#0a1b27}}
 :root[data-theme="dark"]{--bg:#07121a;--sf:#0e1c27;--s2:#132432;--bd:#213546;--tx:#e6eef4;--mu:#88a0b3;--ac:#4fc3e8;--ac2:#0f2e3d;--hb:#0a1b27}
-body{font-family:'IBM Plex Sans Thai','Prompt',system-ui,sans-serif;font-size:13.5px}
-.jc{font-family:'IBM Plex Sans Thai','Prompt',system-ui,sans-serif}
+body{font-family:'Prompt',system-ui,sans-serif;font-size:13.5px}
+.jc{font-family:'Prompt',system-ui,sans-serif}
 :focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 .card{border-radius:12px;box-shadow:var(--sh)}
 .btn{border-radius:8px}
@@ -301,7 +301,7 @@ tbody tr:hover td,#v-stock tbody tr:hover td{background:var(--ac2)}
       <button class="btn p" id="bCapIn">นำเข้า Master Cap / Master Cap update (เพิ่ม/อัปเดต ต่อเนื่องได้)</button>
       <button class="btn" id="bCapOut">Export Master Cap</button>
       <input type="file" id="fCap" accept=".xlsx,.xls,.csv" class="hide">
-      <span class="sub">ลำดับ: Master Cap (ฐานที่นำเข้า / แก้เอง) &gt; Pack &gt; ค่าเริ่มต้นคลัง (CS1 72 · CS2 64 · CS3 72) · ไฟล์นำเข้า: Item, Master Cap (+ ชื่อ, Priority ถ้ามี) หรือไฟล์ Master Cap update (Item + CAP CS1/CS2/CS3 · ใช้ Cap ตามคลังของพาเลท) · นำเข้าไฟล์ใหม่ได้เรื่อย ๆ — Item ใหม่จะเพิ่ม Item เดิมจะอัปเดต ส่วนที่ไม่อยู่ในไฟล์คงเดิม · <b id="capInfo"></b></span>
+      <span class="sub">ลำดับ: Cap ที่แก้เองรายคลัง (เลือก CS ในช่องกำหนด) &gt; Master Cap (ฐานที่นำเข้า / แก้เอง) &gt; Pack &gt; ค่าเริ่มต้นคลัง (CS1 72 · CS2 64 · CS3 72) · ไฟล์นำเข้า: Item, Master Cap (+ ชื่อ, Priority ถ้ามี) หรือไฟล์ Master Cap update (Item + CAP CS1/CS2/CS3 · ใช้ Cap ตามคลังของพาเลท) · นำเข้าไฟล์ใหม่ได้เรื่อย ๆ — Item ใหม่จะเพิ่ม Item เดิมจะอัปเดต ส่วนที่ไม่อยู่ในไฟล์คงเดิม · <b id="capInfo"></b></span>
     </div>
     <div class="overflow-x-auto"><table><thead><tr><th>Item</th><th>ชื่อสินค้า</th><th>WH</th><th class="r">Cap ที่ใช้</th><th>ที่มา</th><th>ลำดับทำก่อน</th><th>กำหนด Master Cap</th></tr></thead><tbody id="cb"></tbody></table></div>
   </section>
@@ -361,7 +361,7 @@ function log(type, r, ref) { logs.unshift({ at: new Date().toLocaleString('th-TH
 
 /* ===================== Master Cap (ลำดับความสำคัญ) ===================== */
 // 1) Master Cap บริษัทราย Item  2) Cap จากคอลัมน์ Pack  3) ค่าเริ่มต้นตามคลัง
-const capOf = (it, wh) => { const m = master[it]; if (m && m.cap > 0 && m.capSrc === 'manual') return m.cap; const c = m && m.caps && m.caps[wh]; return c > 0 ? c : m && m.cap > 0 ? m.cap : m && m.pack > 0 ? m.pack : (DEF[wh] || 72); };   // แก้เอง > Cap แยกคลัง (Master Cap update) > Master > Pack > ค่าเริ่มต้น
+const capOf = (it, wh) => { const m = master[it]; if (m && m.man && m.man[wh] > 0) return m.man[wh]; if (m && m.cap > 0 && m.capSrc === 'manual') return m.cap; const c = m && m.caps && m.caps[wh]; return c > 0 ? c : m && m.cap > 0 ? m.cap : m && m.pack > 0 ? m.pack : (DEF[wh] || 72); };   // แก้เอง > Cap แยกคลัง (Master Cap update) > Master > Pack > ค่าเริ่มต้น
 const srcOf = it => { const m = master[it]; return m && m.cap > 0 ? (m.capSrc === 'manual' ? 'Master (แก้เอง)' : m.capSrc === 'stock' ? 'ไฟล์สต็อก' : m.caps ? 'Master update' : 'Master') : m && m.pack > 0 ? 'Pack' : 'ค่าเริ่มต้น'; };
 const nameOf = (it, fb) => (master[it] && master[it].name) || fb || '';
 const packCap = p => { const v = parseFloat(String(p || '').split('_').pop()); return v > 0 ? v : 0; };   // CS3_C06_12_72 -> 72
@@ -1068,18 +1068,19 @@ function renderFix() {
 /* ===================== หน้า Master Cap ===================== */
 function renderCap() {
   const q = $('#cq').value.toLowerCase(), agg = {}, pr = getPrio();
-  rows.forEach(r => { if (!agg[r.item]) agg[r.item] = { item: r.item, wh: r.wh }; });
-  for (const it in master) if (!agg[it] && (master[it].cap > 0 || master[it].prio > 0)) agg[it] = { item: it, wh: '' };      // Master ฐานที่ยังไม่มีในสต็อกก็แสดง
+  rows.forEach(r => { const a = agg[r.item] || (agg[r.item] = { item: r.item, wh: r.wh, whs: new Set() }); a.whs.add(r.wh); });
+  for (const it in master) if (!agg[it] && (master[it].cap > 0 || master[it].prio > 0)) agg[it] = { item: it, wh: '', whs: new Set() };      // Master ฐานที่ยังไม่มีในสต็อกก็แสดง
   const list = Object.values(agg).filter(a => !q || (a.item + ' ' + nameOf(a.item)).toLowerCase().includes(q)).sort((a, b) => CO.compare(a.item, b.item));
   const nb = Object.values(master).filter(m => m.capSrc === 'base' && m.cap > 0).length;
   $('#capInfo').textContent = 'Master ฐานที่นำเข้า ' + nb.toLocaleString() + ' Item · แสดง ' + Math.min(list.length, 600).toLocaleString() + '/' + list.length.toLocaleString();
   $('#cb').innerHTML = list.slice(0, 600).map(a => {
     const m = master[a.item] || {}, sc = srcOf(a.item), rk = pr.byItem[a.item], okIt = Object.values(GRP).some(g => g.item === a.item) && !rk;
-    return '<tr><td class="mono">' + esc(a.item) + '</td><td>' + esc(nameOf(a.item)) + '</td><td>' + (a.wh ? esc(a.wh) : '<span class="chip">ไม่มีในสต็อก</span>') + '</td><td class="r mono"><b>' + fmt(capOf(a.item, a.wh)) + '</b></td>' +
-      '<td><span class="chip ' + (m.cap > 0 && m.capSrc !== 'stock' ? 'ok' : '') + '">' + esc(sc) + '</span>' + (m.capSrc === 'manual' && m.base > 0 ? '<div class="sub">ฐาน ' + fmt(m.base) + '</div>' : '') + (m.caps ? '<div class="sub">' + ['CS1', 'CS2', 'CS3'].map(k => k + ' ' + (m.caps[k] || '–')).join(' · ') + '</div>' : '') + '</td>' +
+    const ws = [...a.whs].sort(CO.compare), man = m.man ? Object.keys(m.man).sort(CO.compare).map(k => k + ' ' + fmt(m.man[k])).join(' · ') : '', csl = Object.keys(DEF);
+    return '<tr><td class="mono">' + esc(a.item) + '</td><td>' + esc(nameOf(a.item)) + '</td><td>' + (ws.length ? ws.map(w => '<span class="chip">' + esc(w) + '</span>').join(' ') : '<span class="chip">ไม่มีในสต็อก</span>') + '</td><td class="r mono">' + (ws.length > 1 ? ws.map(w => '<div><span class="sub">' + esc(w) + '</span> <b>' + fmt(capOf(a.item, w)) + '</b></div>').join('') : '<b>' + fmt(capOf(a.item, a.wh)) + '</b>') + '</td>' +
+      '<td><span class="chip ' + (m.cap > 0 && m.capSrc !== 'stock' ? 'ok' : '') + '">' + esc(sc) + '</span>' + (m.capSrc === 'manual' && m.base > 0 ? '<div class="sub">ฐาน ' + fmt(m.base) + '</div>' : '') + (m.caps ? '<div class="sub">' + ['CS1', 'CS2', 'CS3'].map(k => k + ' ' + (m.caps[k] || '–')).join(' · ') + '</div>' : '') + (man ? '<div class="sub" style="color:var(--wn)">แก้เอง ' + esc(man) + '</div>' : '') + '</td>' +
       '<td>' + (rk ? '<span class="chip wn">#' + rk + '</span>' : okIt ? '<span class="chip ok">OK</span>' : '<span class="sub">—</span>') + ' <input class="inp" style="width:64px" type="number" min="0" data-p="' + esc(a.item) + '" value="' + (m.prio || '') + '" placeholder="ตั้งเอง"></td>' +
-      '<td><div class="flex gap-1"><input class="inp" style="width:90px" type="number" min="0" data-c="' + esc(a.item) + '" value="' + (m.cap || '') + '" placeholder="Cap"><button class="btn s p" data-cs="' + esc(a.item) + '">บันทึก</button>' +
-      (m.capSrc === 'manual' && m.base > 0 ? '<button class="btn s" data-cr="' + esc(a.item) + '" title="คืนค่า Master ฐาน">คืนค่าฐาน</button>' : '') + '</div></td></tr>';
+      '<td><div class="flex gap-1"><select class="inp" style="width:104px" data-cw="' + esc(a.item) + '" title="เลือกว่าจะกำหนด Cap ของ CS ไหน"><option value="">ทุก CS</option>' + csl.map(c => '<option' + (ws.includes(c) ? '' : ' style="color:var(--mu)"') + '>' + esc(c) + '</option>').join('') + '</select><input class="inp" style="width:90px" type="number" min="0" data-c="' + esc(a.item) + '" value="' + (m.cap || '') + '" placeholder="Cap"><button class="btn s p" data-cs="' + esc(a.item) + '">บันทึก</button>' +
+      ((m.capSrc === 'manual' && m.base > 0) || m.man ? '<button class="btn s" data-cr="' + esc(a.item) + '" title="คืนค่า Master ฐาน">คืนค่าฐาน</button>' : '') + '</div></td></tr>';
   }).join('') || '<tr><td colspan="7" class="sub" style="text-align:center;padding:30px">ไม่มีข้อมูล</td></tr>';
 }
 const ALM = { item: AL.item, cap: AL.cap.concat(['capจัดเก็บcs', 'capจัดเก็บ']), cs: ['capcs1', 'capcs2', 'capcs3'], desc: AL.desc.concat(['ชื่อสินค้า', 'ชื่อ', 'desciption']), prio: ['priority', 'prio', 'ลำดับ', 'ลำดับความสำคัญ', 'ความสำคัญ', 'ลำดับทำก่อน'] };
@@ -1101,7 +1102,7 @@ async function importCaps(f) {                                               // 
     const m = master[it] || (master[it] = {}), old = m.cap > 0 ? m.cap : 0, hasC = Object.keys(cs).length > 0;
     const same0 = old === v && JSON.stringify(m.caps || {}) === JSON.stringify(cs);
     if (!old) add.push(it); else if (!same0) chg.push([it, txt(old, m.caps), txt(v, hasC ? cs : null)]); else same++;
-    m.cap = v; m.base = v; m.capSrc = 'base';                                  // ยึดไฟล์ที่นำเข้าเป็นฐาน
+    m.cap = v; m.base = v; m.capSrc = 'base'; delete m.man;                                  // ยึดไฟล์ที่นำเข้าเป็นฐาน
     if (hasC) { m.caps = cs; withCs++; } else delete m.caps;                   // Cap แยกคลัง (CS1/CS2/CS3) ใช้ตามคลังของพาเลท
     if (cd >= 0 && String(r[cd]).trim() && !m.name) m.name = String(r[cd]).trim();
     if (cp >= 0) { const pv = parseFloat(r[cp]); if (pv > 0) m.prio = pv; }
@@ -1290,7 +1291,7 @@ function clearData(thenImport, o) {
   rows = []; merges = []; cuts = []; fixes = []; mLast = null; mSel.clear(); mDest = ''; pm = {}; limit = 200;       // ล้างสต็อก + ประวัติรวมเลท (ผูกกับแถวเดิม)
   if (o.logs) logs = [];
   if (o.caps) master = {};
-  else { const k = {}; for (const i in master) { const m = master[i]; if (m.cap > 0 || m.prio > 0) k[i] = { cap: m.cap, caps: m.caps, capSrc: m.capSrc, base: m.base, prio: m.prio, name: m.name }; } master = k; }   // เก็บ Master Cap ฐาน / ที่กำหนดเอง / ลำดับความสำคัญ
+  else { const k = {}; for (const i in master) { const m = master[i]; if (m.cap > 0 || m.prio > 0) k[i] = { cap: m.cap, caps: m.caps, man: m.man, capSrc: m.capSrc, base: m.base, prio: m.prio, name: m.name }; } master = k; }   // เก็บ Master Cap ฐาน / ที่กำหนดเอง / ลำดับความสำคัญ
   log('ล้างข้อมูล', { item: '', lpn: '', lot: '', qty: 0, wh: '' }, 'ล้างสต็อก ' + n.toLocaleString() + ' แถว');
   refresh(); toast('ล้างข้อมูลแล้ว');
   if (thenImport) $('#fIn').click();
@@ -1308,7 +1309,7 @@ $('#bCapIn').onclick = () => $('#fCap').click();
 $('#fCap').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) importCaps(f).catch(() => toast('อ่านไฟล์ไม่ได้')); };
 $('#bCapOut').onclick = () => {
   const seen = {}; rows.forEach(r => seen[r.item] = r.wh); for (const i in master) if (!(i in seen) && (master[i].cap > 0 || master[i].prio > 0)) seen[i] = '';
-  dl([['Item', 'ชื่อสินค้า', 'Master Cap', 'Cap ที่ใช้', 'ที่มา', 'ลำดับความสำคัญ', 'Master ฐาน', 'CAP CS1', 'CAP CS2', 'CAP CS3']].concat(Object.keys(seen).sort(CO.compare).map(i => { const m = master[i] || {}; return [i, nameOf(i), m.cap || '', capOf(i, seen[i]), srcOf(i), m.prio || '', m.base || '', (m.caps || {}).CS1 || '', (m.caps || {}).CS2 || '', (m.caps || {}).CS3 || '']; })), 'WMS_MasterCap.xlsx', 'Master Cap');
+  dl([['Item', 'ชื่อสินค้า', 'Master Cap', 'Cap ที่ใช้', 'ที่มา', 'ลำดับความสำคัญ', 'Master ฐาน', 'CAP CS1', 'CAP CS2', 'CAP CS3']].concat(Object.keys(seen).sort(CO.compare).map(i => { const m = master[i] || {}; return [i, nameOf(i), m.cap || '', capOf(i, seen[i]), srcOf(i), m.prio || '', m.base || '', (m.man || {}).CS1 || (m.caps || {}).CS1 || '', (m.man || {}).CS2 || (m.caps || {}).CS2 || '', (m.man || {}).CS3 || (m.caps || {}).CS3 || '']; })), 'WMS_MasterCap.xlsx', 'Master Cap');
 };
 $('#bLogClr').onclick = () => modal('ล้างประวัติ', 'ลบประวัติทั้งหมด?', [['ยกเลิก'], ['ล้าง', 'd', () => { logs = []; refresh(); }]]);
 $('#bMore').onclick = () => { limit += 200; render(); };
@@ -1413,12 +1414,24 @@ $('#mHist').onclick = e => {
   }
   if (x) exportMerge(x.dataset.me);
 }; $('#cq').oninput = renderCap;
+$('#cb').onchange = e => {                                                    // เปลี่ยน CS ที่จะกำหนด → ช่อง Cap แสดงค่าของ CS นั้น
+  const sel = e.target.closest('[data-cw]'); if (!sel) return;
+  const it = sel.dataset.cw, inp = $('#cb').querySelector('[data-c="' + CSS.escape(it) + '"]'), m = master[it] || {};
+  inp.value = sel.value ? ((m.man || {})[sel.value] || '') : (m.cap || '');
+  inp.placeholder = sel.value ? 'ใช้อยู่ ' + fmt(capOf(it, sel.value)) : 'Cap';
+  inp.focus();
+};
 $('#cb').onclick = e => {
   const b = e.target.closest('[data-cs]'), rb = e.target.closest('[data-cr]');
-  if (rb) { const m = master[rb.dataset.cr]; if (m && m.base > 0) { m.cap = m.base; m.capSrc = 'base'; refresh(); toast('คืนค่า Master ฐานแล้ว'); } return; }
+  if (rb) { const m = master[rb.dataset.cr]; if (m) { delete m.man; if (m.capSrc === 'manual' && m.base > 0) { m.cap = m.base; m.capSrc = 'base'; } refresh(); toast('คืนค่า Master ฐานแล้ว'); } return; }
   if (!b) return;
   const it = b.dataset.cs, inp = $('#cb').querySelector('[data-c="' + CSS.escape(it) + '"]'), pin = $('#cb').querySelector('[data-p="' + CSS.escape(it) + '"]'), v = parseFloat(inp.value), pv = parseFloat(pin.value);
-  const m = master[it] || (master[it] = {});
+  const m = master[it] || (master[it] = {}), sel = $('#cb').querySelector('[data-cw="' + CSS.escape(it) + '"]'), cw = sel ? sel.value : '';
+  if (cw) {                                                                   // กำหนด Cap เฉพาะ CS ที่เลือก (ไม่กระทบ CS อื่น)
+    if (v > 0) { (m.man || (m.man = {}))[cw] = v; } else if (m.man) { delete m.man[cw]; if (!Object.keys(m.man).length) delete m.man; }
+    if (pv > 0) m.prio = pv; else delete m.prio;
+    refresh(); toast(v > 0 ? 'บันทึก Cap ของ ' + cw + ' = ' + fmt(v) + ' แล้ว' : 'ล้าง Cap ที่แก้เองของ ' + cw + ' แล้ว'); return;
+  }
   if (v > 0) { if (m.cap !== v) { m.cap = v; m.capSrc = m.base === v ? 'base' : 'manual'; } }
   else if (m.base > 0) { m.cap = m.base; m.capSrc = 'base'; }                // เว้นว่าง = กลับไปใช้ค่าฐาน (ถ้ามี) ไม่งั้น Pack / ค่าเริ่มต้น
   else { delete m.cap; delete m.capSrc; }
